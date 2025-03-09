@@ -24,22 +24,23 @@ router.route('/:country')
 	.get((req, res) => {
 		const promises = [
 			fetchBorders(req.params.country),
-			fetchPopulation(req.params.country)
+			fetchPopulation(req.params.country),
+			fetchFlagURL(req.params.country)
 		]
 
 		Promise.all(promises)
 			.then(values => {
 
 				res.json({
+					flagURL: values[2],
 					borders: values[0],
-					population: values[1],
+					population: values[1]
 				});
 			})
 			.catch(error => {
 				res.status(500).send(error);
 			});
 	});
-
 
 async function fetchBorders(country: string) {
 	const allRoute = `${process.env.EXTERNAL_API_1}/AvailableCountries`
@@ -53,16 +54,25 @@ async function fetchBorders(country: string) {
 	const specRoute = `${process.env.EXTERNAL_API_1}/CountryInfo/${code}`
 	return axios.get(specRoute)
 		.then(res => {
-			return res.data.borders as Array<any>
+			return res.data.borders.map((elem: { commonName: string }) => elem.commonName) as Array<any>
 		});
 }
 
 async function fetchPopulation(country: string) {
-	const route = `${process.env.EXTERNAL_API_2}/countries/population`;
+	const route = `${process.env.EXTERNAL_API_2}/population`;
 
 	return axios.get(route)
 		.then(res => {
 			return res.data.data.find((elem: { country: string }) => elem.country === country).populationCounts as Array<any>
+		})
+}
+
+async function fetchFlagURL(country: string) {
+	const route = `${process.env.EXTERNAL_API_2}/flag/images`;
+
+	return axios.get(route)
+		.then(res => {
+			return res.data.data.find((elem: { name: string }) => elem.name === country).flag as string
 		})
 }
 
